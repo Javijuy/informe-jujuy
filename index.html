@@ -33,6 +33,7 @@
   .heavy{font-family:"Arial Black","Segoe UI Black",Impact,sans-serif;}
   .wrap{max-width:1120px;margin:0 auto;padding:0 20px 80px;
     display:flex;flex-direction:column;gap:26px;}
+  .wrap > *{min-width:0;}
 
   /* ---- Cabecera ---- */
   header{background:var(--ink);color:#fff;padding:44px 40px 38px;margin:0;}
@@ -46,7 +47,7 @@
   .hd-sub b{color:#fff;font-weight:700;}
 
   /* ---- Tiles ---- */
-  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:2px;
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr));gap:2px;
     background:var(--rule);border:1px solid var(--rule);}
   .tile{background:var(--card);padding:22px 20px;}
   .tile .n{font-family:"Arial Black","Segoe UI Black",Impact,sans-serif;
@@ -58,15 +59,32 @@
 
   /* ---- Gráfico ---- */
   .card{background:var(--card);border:1px solid var(--rule);}
-  .chart-scroll{overflow-x:auto;padding:8px 8px 16px;}
-  svg#chart{display:block;width:100%;min-width:740px;height:auto;}
+  .chart-scroll{padding:8px 6px 10px;}
+  svg#chart{display:block;width:100%;height:auto;}
   .t-title{font-family:"Arial Black","Segoe UI Black",Impact,sans-serif;font-size:52px;fill:var(--ink);letter-spacing:-1px;}
   .t-eyebrow{font-family:"Arial Black","Segoe UI Black",Impact,sans-serif;font-size:17px;fill:var(--red);}
   .t-callout{font-family:"Arial Black","Segoe UI Black",Impact,sans-serif;font-size:18px;fill:#FFFFFF;}
   .t-axis{font-size:17px;fill:var(--ink-muted);font-variant-numeric:tabular-nums;
     font-family:"Segoe UI",Arial,sans-serif;}
+  .t-title.n{font-size:21px;letter-spacing:-.4px;}
+  .t-axis.n{font-size:11px;}
+  .t-sub{font-size:11px;fill:var(--ink-muted);font-family:"Segoe UI",Arial,sans-serif;
+    letter-spacing:.6px;}
+  .t-marker{font-family:"Arial Black","Segoe UI Black",Impact,sans-serif;font-size:12px;fill:#FFFFFF;}
   .grid{stroke:var(--rule-soft);stroke-width:1;}
   .hit{fill:transparent;cursor:crosshair;}
+  .callout-list{list-style:none;margin:0;padding:4px 14px 16px;
+    display:flex;flex-direction:column;gap:10px;}
+  .callout-list li{display:flex;gap:12px;align-items:flex-start;
+    background:var(--red);color:#fff;padding:12px 14px;}
+  .cl-num{flex:none;width:26px;height:26px;display:grid;place-items:center;
+    background:#fff;color:var(--red);font-family:"Arial Black","Segoe UI Black",Impact,sans-serif;
+    font-size:14px;line-height:1;}
+  .cl-body{flex:1;min-width:0;}
+  .cl-eyebrow{margin:0 0 4px;font-size:11px;letter-spacing:1px;text-transform:uppercase;
+    font-weight:700;color:#F7D6D7;font-variant-numeric:tabular-nums;}
+  .cl-text{margin:0;font-family:"Arial Black","Segoe UI Black",Impact,sans-serif;
+    font-size:14px;line-height:1.3;}
   .chart-note{border-top:1px solid var(--rule);padding:16px 22px;display:flex;flex-wrap:wrap;gap:8px 30px;}
   .chart-note p{margin:0;font-size:12.5px;line-height:1.55;color:var(--ink-muted);max-width:54ch;}
   .chart-note b{color:var(--ink);}
@@ -200,6 +218,7 @@
       <svg id="chart" viewBox="0 0 1040 905" role="img"
         aria-label="Interacciones diarias en la conversación digital de Jujuy entre el 10 y el 16 de agosto de 2026. Pico máximo el 11 de agosto con 29.197 interacciones; segundo pico el 16 de agosto con 17.090; tercero el 14 de agosto con 10.501."></svg>
     </div>
+    <ol class="callout-list" id="calloutList" style="display:none"></ol>
     <div class="chart-note">
       <p><b>Qué mide.</b> Suma diaria de reacciones, comentarios y compartidos de los 22 posteos relevados.
       Las reproducciones de video quedan fuera del conteo.</p>
@@ -510,11 +529,14 @@ const DATA = [
 ];
 
 const CALLOUTS = [
-  {i:1, eyebrow:"11 ago | 29 K interacciones",
+  {i:1, eyebrow:"11 ago · 29 K interacciones",
+   text:"No hay clases en las secundarias de Jujuy por mesas de exámenes",
    lines:["NO HAY CLASES EN","LAS SECUNDARIAS","DE JUJUY POR","MESAS DE","EXÁMENES"]},
-  {i:4, eyebrow:"14 ago | 11 K interacciones",
+  {i:4, eyebrow:"14 ago · 11 K interacciones",
+   text:"La Renga probó sonido en Jujuy y se anunció a Euge Quevedo en el cierre de la FNE",
    lines:["LA RENGA PROBÓ","SONIDO EN JUJUY Y","SE ANUNCIÓ A EUGE","QUEVEDO EN EL","CIERRE DE LA FNE"]},
-  {i:6, eyebrow:"16 ago | 17 K interacciones",
+  {i:6, eyebrow:"16 ago · 17 K interacciones",
+   text:"La Renga homenajeó al Indio Solari en el cierre de su recital en Jujuy",
    lines:["LA RENGA","HOMENAJEÓ AL","INDIO SOLARI EN EL","CIERRE DE SU","RECITAL EN JUJUY"]}
 ];
 
@@ -529,83 +551,137 @@ const RANK = [
   {t:"Alto Padilla: vallado del recital",  v:1642,  c:381}
 ];
 
-const W = 1040, PL = 96, PR = 1000, PT = 462, PB = 842;
-const YMIN = 500, YMAX = 30500, TICKS = [500,5500,10500,15500,20500,25500,30500];
-const x = i => PL + (PR - PL) * i / (DATA.length - 1);
-const y = v => PB - (v - YMIN) / (YMAX - YMIN) * (PB - PT);
+const YMIN = 500, YMAX = 30500;
 const fmt = n => n.toLocaleString("es-AR");
 const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
 
-const BOX_W = 296, BOX_X = [40, 372, 704], BOX_TOP = 218, LH = 23, PAD = 17;
-const BOX_H = PAD * 2 + LH * 5;
+const svgEl  = document.getElementById("chart");
+const listEl = document.getElementById("calloutList");
+const tip    = document.getElementById("tip");
+let G = null;   // geometria del render vigente
 
-let s = "";
-s += `<text class="t-title" x="${W/2}" y="86" text-anchor="middle">PICOS DE CONVERSACIÓN</text>`;
-s += `<text class="t-title" x="${W/2}" y="142" text-anchor="middle">EN LOS ÚLTIMOS 7 DÍAS</text>`;
-
-CALLOUTS.forEach((c, k) => {
-  const cx = BOX_X[k] + BOX_W / 2;
-  s += `<line x1="${cx}" y1="${BOX_TOP + BOX_H}" x2="${x(c.i)}" y2="${y(DATA[c.i].v)}" stroke="#D0393E" stroke-width="2.5"/>`;
-});
-
-TICKS.forEach(t => {
-  s += `<line class="grid" x1="${PL}" y1="${y(t)}" x2="${PR}" y2="${y(t)}"/>`;
-  s += `<text class="t-axis" x="${PL - 16}" y="${y(t) + 6}" text-anchor="end">${fmt(t)}</text>`;
-});
-
-const pts = DATA.map((p, i) => `${x(i)},${y(p.v)}`).join(" ");
-s += `<polygon points="${PL},${PB} ${pts} ${PR},${PB}" fill="#D0393E"/>`;
-s += `<polyline points="${pts}" fill="none" stroke="#A82B30" stroke-width="2" stroke-linejoin="round"/>`;
-
-CALLOUTS.forEach(c => {
-  s += `<circle cx="${x(c.i)}" cy="${y(DATA[c.i].v)}" r="7" fill="#D0393E" stroke="#FFFFFF" stroke-width="2"/>`;
-});
-
-DATA.forEach((p, i) => {
-  s += `<text class="t-axis" x="${x(i)}" y="${PB + 34}" text-anchor="middle">${p.d}</text>`;
-});
-
-CALLOUTS.forEach((c, k) => {
-  const bx = BOX_X[k];
-  s += `<text class="t-eyebrow" x="${bx + 4}" y="${BOX_TOP - 12}">${esc(c.eyebrow)}</text>`;
-  s += `<rect x="${bx}" y="${BOX_TOP}" width="${BOX_W}" height="${BOX_H}" fill="#D0393E"/>`;
-  c.lines.forEach((ln, j) => {
-    s += `<text class="t-callout" x="${bx + BOX_W / 2}" y="${BOX_TOP + PAD + LH * j + 17}" text-anchor="middle">${esc(ln)}</text>`;
+/* ---------- pantalla ancha: los carteles flotan sobre el grafico ---------- */
+function renderWide(){
+  const W=1040, PL=96, PR=1000, PT=462, PB=842, H=905;
+  const TICKS=[500,5500,10500,15500,20500,25500,30500];
+  const BOX_W=296, BOX_X=[40,372,704], BOX_TOP=218, LH=23, PAD=17;
+  const BOX_H=PAD*2+LH*5;
+  const x=i=>PL+(PR-PL)*i/(DATA.length-1);
+  const y=v=>PB-(v-YMIN)/(YMAX-YMIN)*(PB-PT);
+  let s="";
+  s+=`<text class="t-title" x="${W/2}" y="86" text-anchor="middle">PICOS DE CONVERSACIÓN</text>`;
+  s+=`<text class="t-title" x="${W/2}" y="142" text-anchor="middle">EN LOS ÚLTIMOS 7 DÍAS</text>`;
+  CALLOUTS.forEach((c,k)=>{
+    const cx=BOX_X[k]+BOX_W/2;
+    s+=`<line x1="${cx}" y1="${BOX_TOP+BOX_H}" x2="${x(c.i)}" y2="${y(DATA[c.i].v)}" stroke="#D0393E" stroke-width="2.5"/>`;
   });
-});
-
-const half = (PR - PL) / (DATA.length - 1) / 2;
-DATA.forEach((p, i) => {
-  const hx = Math.max(PL, x(i) - half);
-  const hw = Math.min(PR, x(i) + half) - hx;
-  s += `<rect class="hit" data-i="${i}" x="${hx}" y="${PT}" width="${hw}" height="${PB - PT}"/>`;
-});
-s += `<line id="cross" x1="0" y1="${PT}" x2="0" y2="${PB}" stroke="#A82B30" stroke-width="1.5" stroke-dasharray="4 4" opacity="0"/>`;
-s += `<circle id="focus" r="8" fill="#FFFFFF" stroke="#A82B30" stroke-width="3" opacity="0"/>`;
-
-document.getElementById("chart").innerHTML = s;
-
-const tip = document.getElementById("tip");
-const cross = document.getElementById("cross");
-const focus = document.getElementById("focus");
-
-document.querySelectorAll(".hit").forEach(r => {
-  r.addEventListener("mousemove", e => {
-    const i = +r.dataset.i, p = DATA[i];
-    cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("opacity", ".55");
-    focus.setAttribute("cx", x(i)); focus.setAttribute("cy", y(p.v)); focus.setAttribute("opacity", "1");
-    tip.innerHTML = `${p.label} de agosto<br><b>${fmt(p.v)} interacciones</b><span>${esc(p.topic)}</span>`;
-    tip.style.opacity = "1";
-    const w = tip.offsetWidth, h = tip.offsetHeight;
-    tip.style.left = Math.min(window.innerWidth - w - 12, Math.max(12, e.clientX + 16)) + "px";
-    tip.style.top  = Math.max(12, e.clientY - h - 14) + "px";
+  TICKS.forEach(v=>{
+    s+=`<line class="grid" x1="${PL}" y1="${y(v)}" x2="${PR}" y2="${y(v)}"/>`;
+    s+=`<text class="t-axis" x="${PL-16}" y="${y(v)+6}" text-anchor="end">${fmt(v)}</text>`;
   });
-  r.addEventListener("mouseleave", () => {
-    tip.style.opacity = "0";
-    cross.setAttribute("opacity", "0");
-    focus.setAttribute("opacity", "0");
+  const pts=DATA.map((p,i)=>`${x(i)},${y(p.v)}`).join(" ");
+  s+=`<polygon points="${PL},${PB} ${pts} ${PR},${PB}" fill="#D0393E"/>`;
+  s+=`<polyline points="${pts}" fill="none" stroke="#A82B30" stroke-width="2" stroke-linejoin="round"/>`;
+  CALLOUTS.forEach(c=>{
+    s+=`<circle cx="${x(c.i)}" cy="${y(DATA[c.i].v)}" r="7" fill="#D0393E" stroke="#FFFFFF" stroke-width="2"/>`;
   });
-});
+  DATA.forEach((p,i)=>{
+    s+=`<text class="t-axis" x="${x(i)}" y="${PB+34}" text-anchor="middle">${p.d}</text>`;
+  });
+  CALLOUTS.forEach((c,k)=>{
+    const bx=BOX_X[k];
+    s+=`<text class="t-eyebrow" x="${bx+4}" y="${BOX_TOP-12}">${esc(c.eyebrow)}</text>`;
+    s+=`<rect x="${bx}" y="${BOX_TOP}" width="${BOX_W}" height="${BOX_H}" fill="#D0393E"/>`;
+    c.lines.forEach((ln,j)=>{
+      s+=`<text class="t-callout" x="${bx+BOX_W/2}" y="${BOX_TOP+PAD+LH*j+17}" text-anchor="middle">${esc(ln)}</text>`;
+    });
+  });
+  return {vb:`0 0 ${W} ${H}`, markup:s, x, y, PL, PR, PT, PB, r:8, sw:3};
+}
+
+/* ---------- celular: el grafico entra en el ancho, los carteles van debajo ---------- */
+function renderNarrow(){
+  const W=400, H=406, PL=58, PR=386, PT=96, PB=344;
+  const TICKS=[500,10500,20500,30500];
+  const x=i=>PL+(PR-PL)*i/(DATA.length-1);
+  const y=v=>PB-(v-YMIN)/(YMAX-YMIN)*(PB-PT);
+  let s="";
+  s+=`<text class="t-title n" x="${W/2}" y="30" text-anchor="middle">PICOS DE CONVERSACIÓN</text>`;
+  s+=`<text class="t-title n" x="${W/2}" y="56" text-anchor="middle">EN LOS ÚLTIMOS 7 DÍAS</text>`;
+  s+=`<text class="t-sub" x="${W/2}" y="78" text-anchor="middle">INTERACCIONES POR DÍA · AGOSTO 2026</text>`;
+  TICKS.forEach(v=>{
+    s+=`<line class="grid" x1="${PL}" y1="${y(v)}" x2="${PR}" y2="${y(v)}"/>`;
+    s+=`<text class="t-axis n" x="${PL-8}" y="${y(v)+4}" text-anchor="end">${fmt(v)}</text>`;
+  });
+  const pts=DATA.map((p,i)=>`${x(i)},${y(p.v)}`).join(" ");
+  s+=`<polygon points="${PL},${PB} ${pts} ${PR},${PB}" fill="#D0393E"/>`;
+  s+=`<polyline points="${pts}" fill="none" stroke="#A82B30" stroke-width="1.6" stroke-linejoin="round"/>`;
+  DATA.forEach((p,i)=>{
+    s+=`<text class="t-axis n" x="${x(i)}" y="${PB+19}" text-anchor="middle">${p.d.replace("-ago","")}</text>`;
+  });
+  CALLOUTS.forEach((c,k)=>{
+    const cx=x(c.i), cy=y(DATA[c.i].v);
+    s+=`<circle cx="${cx}" cy="${cy}" r="11" fill="#D0393E" stroke="#FFFFFF" stroke-width="2.5"/>`;
+    s+=`<text class="t-marker" x="${cx}" y="${cy+4.5}" text-anchor="middle">${k+1}</text>`;
+  });
+  return {vb:`0 0 ${W} ${H}`, markup:s, x, y, PL, PR, PT, PB, r:6, sw:2};
+}
+
+function paint(){
+  const narrow = svgEl.parentElement.clientWidth < 700;
+  const g = narrow ? renderNarrow() : renderWide();
+  const half=(g.PR-g.PL)/(DATA.length-1)/2;
+  let hits="";
+  DATA.forEach((p,i)=>{
+    const hx=Math.max(g.PL,g.x(i)-half), hw=Math.min(g.PR,g.x(i)+half)-hx;
+    hits+=`<rect class="hit" data-i="${i}" x="${hx}" y="${g.PT}" width="${hw}" height="${g.PB-g.PT}"/>`;
+  });
+  hits+=`<line id="cross" x1="0" y1="${g.PT}" x2="0" y2="${g.PB}" stroke="#A82B30" stroke-width="1.5" stroke-dasharray="4 4" opacity="0"/>`;
+  hits+=`<circle id="focus" r="${g.r}" fill="#FFFFFF" stroke="#A82B30" stroke-width="${g.sw}" opacity="0"/>`;
+  svgEl.setAttribute("viewBox", g.vb);
+  svgEl.innerHTML = g.markup + hits;
+  G = g;
+  listEl.style.display = narrow ? "flex" : "none";
+  bindHits();
+}
+
+function bindHits(){
+  const cross=svgEl.querySelector("#cross"), focus=svgEl.querySelector("#focus");
+  const hide=()=>{tip.style.opacity="0";cross.setAttribute("opacity","0");focus.setAttribute("opacity","0");};
+  svgEl.querySelectorAll(".hit").forEach(r=>{
+    const show=e=>{
+      const i=+r.dataset.i, p=DATA[i];
+      cross.setAttribute("x1",G.x(i)); cross.setAttribute("x2",G.x(i)); cross.setAttribute("opacity",".55");
+      focus.setAttribute("cx",G.x(i)); focus.setAttribute("cy",G.y(p.v)); focus.setAttribute("opacity","1");
+      tip.innerHTML=`${p.label} de agosto<br><b>${fmt(p.v)} interacciones</b><span>${esc(p.topic)}</span>`;
+      tip.style.opacity="1";
+      const w=tip.offsetWidth,h=tip.offsetHeight;
+      tip.style.left=Math.min(window.innerWidth-w-12,Math.max(12,e.clientX+16))+"px";
+      tip.style.top=Math.max(12,e.clientY-h-14)+"px";
+    };
+    r.addEventListener("pointerdown",show);
+    r.addEventListener("pointermove",show);
+    r.addEventListener("pointerleave",hide);
+    r.addEventListener("pointercancel",hide);
+  });
+}
+document.addEventListener("pointerdown",e=>{
+  if(!e.target.closest("#chart")){
+    const f=svgEl.querySelector("#focus"), c=svgEl.querySelector("#cross");
+    tip.style.opacity="0"; if(f)f.setAttribute("opacity","0"); if(c)c.setAttribute("opacity","0");
+  }
+},{passive:true});
+
+listEl.innerHTML = CALLOUTS.map((c,k)=>`<li>
+  <span class="cl-num">${k+1}</span>
+  <div class="cl-body">
+    <p class="cl-eyebrow">${esc(c.eyebrow)}</p>
+    <p class="cl-text">${esc(c.text)}</p>
+  </div></li>`).join("");
+
+paint();
+let rt;
+window.addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(paint,150);});
 
 const maxV = Math.max(...RANK.map(r => r.v));
 const maxC = Math.max(...RANK.map(r => r.c));
